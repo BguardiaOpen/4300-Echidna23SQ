@@ -9,27 +9,212 @@
 #include "db_cxx.h"
 #include "SQLParser.h"
 #include "sqlhelper.h"
+#include "SQLParserResult.h"
 
 using namespace std;
 using namespace hsql;
 
-void execute(string sqlcmd);
-string parse(SQLParserResult* &result, string inputString);
+string execute(const SQLStatement* result);
+string expressionToString(const Expr *expr);
+string operatorExpressionToString(const Expr *expr);
+string tableRefInfoToString(const TableRef *table);
+string executeInsert(const InsertStatement *statement);
+string executeCreate(const CreateStatement *stmt);
+string executeSelect(const SelectStatement *stmt);
+
 
 u_int32_t env_flags = DB_CREATE | DB_INIT_MPOOL; //If the environment does not exist, create it.  Initialize memory.
 u_int32_t db_flags = DB_CREATE; //If the database does not exist, create it.
 
+string expressionToString(const Expr *expr) {
+    string ret;
+    switch (expr->type){
+        case kExprStar:
+            ret += "*";
+            break;
+        case kExprColumnRef:
+            if (expr->table != NULL)
+                ret += string(expr->table) + ".";
+        case kExprLiteralString:
+            ret += expr->name;
+            break;
+        case kExprLiteralFloat:
+            ret += to_string(expr->fval);
+            break;
+        case kExprLiteralInt:
+            ret += to_string(expr->ival);
+            break;
+        case kExprFunctionRef:
+            ret += string(expr->name) + "?" + expr->expr->name;
+            break;
+        case kExprOperator:
+            ret += operatorExpressionToString(expr);
+            break;
+        default:
+            ret += "???";  // in case there are exprssion types we don't know about here
+            break;
+    }
+    if (expr->alias != NULL)
+        ret += string(" AS ") + expr->alias;
+    return ret;
+}
+
+string operatorExpressionToString(const Expr *expr) {
+    if (expr == NULL)
+        return "null";
+    string ret;
+    // Unary prefix operator: NOT
+    if (expr->opType == Expr::NOT)
+        ret += "NOT ";
+    // Left-hand side of expression
+    ret += expressionToString(expr->expr) + " ";
+    // Operator itself
+    switch (expr->opType){
+        case Expr::SIMPLE_OP:
+            ret += expr->opChar;
+            break;
+        case Expr::AND:
+            ret += "AND";
+            break;
+        case Expr::OR:
+            ret += "OR";
+            break;
+        default:
+            break; 
+    }
+    if (expr->expr2 != NULL)
+        ret += " " + expressionToString(expr->expr2);
+    return ret;
+}
+
+string tableRefInfoToString(const TableRef *table) {
+    string ret;
+    switch (table->type) {
+        case kTableSelect:
+            ret += "kTableSelect FIXME"; // FIXME
+            break;
+        case kTableName:
+            ret += table->name;
+            if (table->alias != NULL)
+                ret += string(" AS ") + table->alias;
+            break;
+        case kTableJoin:
+            ret += tableRefInfoToString(table->join->left);
+            switch (table->join->type){
+                case kJoinCross:
+                case kJoinInner:
+                    ret += " JOIN ";
+                    break;
+                case kJoinOuter:
+                case kJoinLeftOuter:
+                case kJoinLeft:
+                    ret += " LEFT JOIN ";
+                    break;
+                case kJoinRightOuter:
+                case kJoinRight:
+                    ret += " RIGHT JOIN ";
+                    break;
+                case kJoinNatural:
+                    ret += " NATURAL JOIN ";
+                    break;
+            }
+            ret += tableRefInfoToString(table->join->right);
+            if (table->join->condition != NULL)
+                ret += " ON " + expressionToString(table->join->condition);
+            break;
+        case kTableCrossProduct:
+            bool doComma = false;
+            for (TableRef *tbl : *table->list){
+                if (doComma)
+                    ret += ", ";
+                ret += tableRefInfoToString(tbl);
+                doComma = true;
+            }
+            break;
+    }
+    return ret;
+}
+
+string columnDefinitionToString(const ColumnDefinition *col) {
+    string ret(col->name);
+    switch (col->type) {
+        case ColumnDefinition::DOUBLE:
+            ret += " DOUBLE";
+            break;
+        case ColumnDefinition::INT:
+            ret += " INT";
+            break;
+        case ColumnDefinition::TEXT:
+            ret += " TEXT";
+            break;
+        default:
+            ret += " ...";
+            break;
+    }
+    return ret;
+}
+
+string execute(const SQLStatement* result){
+    switch(result->type()){
+        case kStmtSelect:
+            return executeSelect((const SelectStatement *) result);
+        case kStmtCreate:
+            return executeCreate((const CreateStatement *) result);
+        case kStmtInsert:
+            return executeInsert((const InsertStatement *) result);
+        default:
+            return "Not implemented.";
+    }
+} 
+
+string executeInsert(const InsertStatement *statement){
+    return "INSERT ...";
+}
+
+string executeCreate(const CreateStatement *stmt){
+    string ret("CREATE TABLE ");
+    if (stmt->type != CreateStatement::kTable)
+        return ret + "...";
+    if (stmt->ifNotExists)
+        ret += "IF NOT EXISTS ";
+    ret += string(stmt->tableName) + " (";
+    bool doComma = false;
+    for (ColumnDefinition *col : *stmt->columns){
+        if (doComma)
+            ret += ", ";
+        ret += columnDefinitionToString(col);
+        doComma = true;
+    }
+    ret += ")";
+    return ret;
+}
+
+string executeSelect(const SelectStatement *stmt){
+    string ret("SELECT ");
+    bool doComma = false;
+    for (Expr *expr : *stmt->selectList){
+        if (doComma)
+            ret += ", ";
+        ret += expressionToString(expr);
+        doComma = true;
+    }
+    ret += " FROM " + tableRefInfoToString(stmt->fromTable);
+    if (stmt->whereClause != NULL)
+        ret += " WHERE " + expressionToString(stmt->whereClause);
+    return ret;
+}
+
 int main(int argc, char **argv) {
     if(argc != 2){
-        cerr << "Missing path" << endl;
+        cerr << "Missing path." << endl;
         return -1;
     }
     string dbPath = argv[1];
-    DbEnv *env = new DbEnv(0);
+    DbEnv *env = new DbEnv(0U);
+    env->set_message_stream(&cout);
+    env->set_error_stream(&cerr);
     try{
-        env->open(dbPath, env_flags, 0);
-        env.set_message_stream(cout);
-        env.set_error_stream(cerr);
+        env->open(dbPath.c_str(), env_flags, 0);
     }
     catch (DbException &e){
         cerr << "Error with database: " << dbPath << endl;
@@ -47,20 +232,19 @@ int main(int argc, char **argv) {
         if(sqlcmd == "quit"){
             break;
         }
-        execute(sqlcmd);
+        SQLParserResult* result = SQLParser::parseSQLString(sqlcmd);
+        if(!result->isValid()){
+            cout << "Invalid command: " << sqlcmd << endl;
+            delete result;
+        } else {
+            for(int i = 0; i < result->size(); ++i){
+                cout << execute(result->getStatement(i)) << endl;
+            }
+            delete result;
+        }
+        
     }
+    env->close(0U);
     return 0;
 }
 
-void execute(string sqlcmd){
-    hsql::SQLParserResult* result = hsql::SQLParser::parseSQLString(sqlcmd);
-    if(!result->isValid()){
-        cout << "Invalid command: " << sqlcmd << endl;
-    }
-    else { 
-        for(int i = 0; i < result->size(); i++){
-            SQLStatement *statement = result->getStatement(i)
-        }
-    }
-    delete result;
-}
