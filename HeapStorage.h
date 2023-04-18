@@ -6,6 +6,7 @@
 
 #include "db_cxx.h"
 #include "storage_engine.h"
+using namespace std;
 
 /**
  * @class SlottedPage - heap file implementation of DbBlock.
@@ -168,5 +169,3 @@ protected:
 
     virtual ValueDict *unmarshal(Dbt *data);
 };
-
-bool test_heap_storage();

@@ -1,6 +1,6 @@
 //Ryan Silveira
-// 4/3/2023
-//CPSC 4300
+// 4/16/2023
+//CPSC 4300 - Milestone 1
 
 #include <iostream>
 #include <cstdio>
@@ -10,6 +10,7 @@
 #include "SQLParser.h"
 #include "sqlhelper.h"
 #include "SQLParserResult.h"
+//#include "HeapStorage.h"
 
 using namespace std;
 using namespace hsql;
@@ -21,7 +22,6 @@ string tableRefInfoToString(const TableRef *table);
 string executeInsert(const InsertStatement *statement);
 string executeCreate(const CreateStatement *stmt);
 string executeSelect(const SelectStatement *stmt);
-
 
 u_int32_t env_flags = DB_CREATE | DB_INIT_MPOOL; //If the environment does not exist, create it.  Initialize memory.
 u_int32_t db_flags = DB_CREATE; //If the database does not exist, create it.
@@ -239,12 +239,13 @@ int main(int argc, char **argv) {
         } else {
             for(int i = 0; i < result->size(); ++i){
                 cout << execute(result->getStatement(i)) << endl;
-            }
-            delete result;
         }
+            delete result;
+    }
         
     }
     env->close(0U);
     return 0;
 }
 
+    
