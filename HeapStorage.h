@@ -102,7 +102,7 @@ public:
     virtual SlottedPage *get(BlockID block_id);
 
     virtual void put(DbBlock *block);
-
+    //Block IDs is a vector of BlockID and THIS FUNCTION IS IMPLETEMENTED BUT SHOWS AS VIRTUAL?
     virtual BlockIDs *block_ids();
 
     virtual u_int32_t get_last_block_id() { return last; }

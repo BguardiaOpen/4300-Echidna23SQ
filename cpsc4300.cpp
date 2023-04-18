@@ -10,7 +10,7 @@
 #include "SQLParser.h"
 #include "sqlhelper.h"
 #include "SQLParserResult.h"
-//#include "HeapStorage.h"
+#include "HeapStorage.h"
 
 using namespace std;
 using namespace hsql;
@@ -239,10 +239,9 @@ int main(int argc, char **argv) {
         } else {
             for(int i = 0; i < result->size(); ++i){
                 cout << execute(result->getStatement(i)) << endl;
-        }
+            }
             delete result;
-    }
-        
+        }
     }
     env->close(0U);
     return 0;
