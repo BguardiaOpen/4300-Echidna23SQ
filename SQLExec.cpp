@@ -43,12 +43,19 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
 }
 
 QueryResult::~QueryResult() {
-    // FIXME
+    delete column_names;
+    delete column_attributes;
+    for (int i = 0; i < rows.size(); i++)
+        delete rows[i];
+    delete rows;
 }
 
 
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
-    // FIXME: initialize _tables table, if not yet present
+    // Initializes _tables table if not null
+    if (!SQLExec::tables) {
+        SQLExec::tables = new Tables();
+    }
 
     try {
         switch (statement->type()) {
@@ -68,7 +75,16 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
 
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
-    throw SQLExecError("not implemented");  // FIXME
+    column_name = col->name;
+    switch(col->type) {
+        case ColumnDefinition::INT:
+            column_attribute.set_data_type(ColumnAttribute::INT);
+            break;
+        case ColumnDefinition::TEXT:
+            column_attribute.set_data_type(ColumnAttribute::TEXT);
+        default:
+            throw SQLExecError("Column type not supported");
+    }
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
