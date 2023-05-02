@@ -161,7 +161,24 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
  * @return QueryResult* the result of the show
  */
 QueryResult *SQLExec::show_tables() {
-    return new QueryResult("not implemented"); // FIXME
+    ColumnNames *column_names = new ColumnNames;
+    column_names->push_back("table_name");
+
+    ColumnAttributes *column_attributes = new ColumnAttribute;
+    column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
+
+    Handles *handles = SQLExec::tables->select();
+
+    ValueDicts *rows = new ValueDicts;
+    for (auto const &handle : handles) {
+        ValueDict *row = SQLExec::tables->project(handle);
+        Identifier table_name = row->at("table_name").s;
+        rows->push_back(row);
+    }
+
+    delete handles;
+
+    return new QueryResult(column_names, column_attributes, rows, "showing tables");
 }
 
 /**
