@@ -16,14 +16,14 @@
 using namespace std;
 using namespace hsql;
 
-string execute(const SQLStatement* result);
+string parse(const SQLStatement* result);
 string expressionToString(const Expr *expr);
 string operatorExpressionToString(const Expr *expr);
 string tableRefInfoToString(const TableRef *table);
-string executeInsert(const InsertStatement *statement);
-string executeCreate(const CreateStatement *stmt);
-string executeSelect(const SelectStatement *stmt);
-string executeShow(const ShowStatement *stmt);
+string parseInsert(const InsertStatement *statement);
+string parseCreate(const CreateStatement *stmt);
+string parseSelect(const SelectStatement *stmt);
+string parseShow(const ShowStatement *stmt);
 
 u_int32_t env_flags = DB_CREATE | DB_INIT_MPOOL; //If the environment does not exist, create it.  Initialize memory.
 u_int32_t db_flags = DB_CREATE; //If the database does not exist, create it.
@@ -156,26 +156,26 @@ string columnDefinitionToString(const ColumnDefinition *col) {
     return ret;
 }
 
-string execute(const SQLStatement* result){
+string parse(const SQLStatement* result){
     switch(result->type()){
         case kStmtSelect:
-            return executeSelect((const SelectStatement *) result);
+            return parseSelect((const SelectStatement *) result);
         case kStmtCreate:
-            return executeCreate((const CreateStatement *) result);
+            return parseCreate((const CreateStatement *) result);
         case kStmtInsert:
-            return executeInsert((const InsertStatement *) result);
+            return parseInsert((const InsertStatement *) result);
         case kStmtShow:
-            return executeShow((const ShowStatement *) result);
+            return parseShow((const ShowStatement *) result);
         default:
             return "Not implemented.";
     }
 } 
 
-string executeInsert(const InsertStatement *statement){
+string parseInsert(const InsertStatement *statement){
     return "INSERT ...";
 }
 
-string executeShow(const ShowStatement *stmt) {
+string parseShow(const ShowStatement *stmt) {
     string ret("SHOW ");
     switch(stmt->type) {
         case ShowStatement::kTables:
@@ -190,7 +190,7 @@ string executeShow(const ShowStatement *stmt) {
     return ret;
 }
 
-string executeCreate(const CreateStatement *stmt){
+string parseCreate(const CreateStatement *stmt){
     string ret("CREATE TABLE ");
     if (stmt->type != CreateStatement::kTable)
         return ret + "...";
@@ -208,7 +208,7 @@ string executeCreate(const CreateStatement *stmt){
     return ret;
 }
 
-string executeSelect(const SelectStatement *stmt){
+string parseSelect(const SelectStatement *stmt){
     string ret("SELECT ");
     bool doComma = false;
     for (Expr *expr : *stmt->selectList){
@@ -254,13 +254,24 @@ int main(int argc, char **argv) {
         SQLParserResult* result = SQLParser::parseSQLString(sqlcmd);
         if(!result->isValid()){
             cout << "Invalid command: " << sqlcmd << endl;
-            delete result;
         } else {
             for(int i = 0; i < result->size(); ++i){
-                cout << execute(result->getStatement(i)) << endl;
+                cout << parse(result->getStatement(i)) << endl;
+                try {
+                    /* TODO: fix undefined reference to execute
+                        not sure if it's linking correctly in the makefile?
+                    */
+                    QueryResult *q_result = SQLExec::execute(result->getStatement(i));
+                    // TODO: fix undefined reference to overloaded operator
+                    cout << *q_result << endl;
+                    delete q_result;
+                }
+                catch (SQLExecError &e) {
+                    cerr << e.what() << endl;
+                }
             }
-            delete result;
         }
+        delete result;
     }
     env->close(0U);
     return 0;
