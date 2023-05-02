@@ -51,6 +51,12 @@ QueryResult::~QueryResult() {
 }
 
 
+/**
+ * @brief Executes create, drop, and show statements
+ * 
+ * @param statement the statement to be executed
+ * @return QueryResult* the result of the statement
+ */
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // Initializes _tables table if not null
     if (!SQLExec::tables) {
@@ -73,6 +79,13 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     }
 }
 
+/**
+ * @brief Sets up the column definitions
+ * 
+ * @param col the column to be changed
+ * @param column_name name of the column
+ * @param column_attribute type of the column
+ */
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     column_name = col->name;
@@ -87,8 +100,30 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
     }
 }
 
+/**
+ * @brief Executes a create statement
+ * 
+ * @param statement the create statement to be executed
+ * @return QueryResult* the result of the create statement
+ */
 QueryResult *SQLExec::create(const CreateStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    try {
+        Identifier name = statement->tableName;
+        ColumnNames cols_names;
+        ColumnAttributes cols_attrs;
+        Identifier col_name;
+        ColumnAttribute col_attr;
+        for (ColumnDefinition *c : *statement->columns) {
+            column_definition(col, col_name, col_attr);
+            cols_names.push_back(col_name);
+            cols_attrs.push_back(col_attr);
+        }
+
+        return new QueryResult("successfully created table");
+    } catch (exception &e) {
+        cerr << e.what() << endl;
+        return new QueryResult("failed to create table");
+    }
 }
 
 // DROP ...
