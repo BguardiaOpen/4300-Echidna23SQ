@@ -23,6 +23,7 @@ string tableRefInfoToString(const TableRef *table);
 string executeInsert(const InsertStatement *statement);
 string executeCreate(const CreateStatement *stmt);
 string executeSelect(const SelectStatement *stmt);
+string executeShow(const ShowStatement *stmt);
 
 u_int32_t env_flags = DB_CREATE | DB_INIT_MPOOL; //If the environment does not exist, create it.  Initialize memory.
 u_int32_t db_flags = DB_CREATE; //If the database does not exist, create it.
@@ -163,6 +164,8 @@ string execute(const SQLStatement* result){
             return executeCreate((const CreateStatement *) result);
         case kStmtInsert:
             return executeInsert((const InsertStatement *) result);
+        case kStmtShow:
+            return executeShow((const ShowStatement *) result);
         default:
             return "Not implemented.";
     }
@@ -170,6 +173,21 @@ string execute(const SQLStatement* result){
 
 string executeInsert(const InsertStatement *statement){
     return "INSERT ...";
+}
+
+string executeShow(const ShowStatement *stmt) {
+    string ret("SHOW ");
+    switch(stmt->type) {
+        case ShowStatement::kTables:
+            ret += "TABLES";
+            break;
+        case ShowStatement::kColumns:
+            ret += string("COLUMNS FROM ") + stmt->tableName;
+            break;
+        default:
+            return "Invalid show";
+    }
+    return ret;
 }
 
 string executeCreate(const CreateStatement *stmt){
