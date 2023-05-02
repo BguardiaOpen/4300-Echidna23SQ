@@ -119,6 +119,8 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             cols_attrs.push_back(col_attr);
         }
 
+        // ????
+
         return new QueryResult("successfully created table");
     } catch (exception &e) {
         cerr << e.what() << endl;
@@ -126,19 +128,41 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     }
 }
 
-// DROP ...
+/**
+ * @brief Executes a drop statement
+ * 
+ * @param statement the statement to be executed
+ * @return QueryResult* the result of the drop statement
+ */
 QueryResult *SQLExec::drop(const DropStatement *statement) {
     return new QueryResult("not implemented"); // FIXME
 }
 
+/**
+ * @brief Executes a show statement
+ * 
+ * @param statement the statement to be executed
+ * @return QueryResult* the result of the show statement
+ */
 QueryResult *SQLExec::show(const ShowStatement *statement) {
     return new QueryResult("not implemented"); // FIXME
 }
 
+/**
+ * @brief Shows all tables
+ * 
+ * @return QueryResult* the result of the show
+ */
 QueryResult *SQLExec::show_tables() {
     return new QueryResult("not implemented"); // FIXME
 }
 
+/**
+ * @brief Shows all columns
+ * 
+ * @param statement the statement to be executed
+ * @return QueryResult* the result of show
+ */
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     return new QueryResult("not implemented"); // FIXME
 }
