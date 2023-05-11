@@ -43,11 +43,18 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
 }
 
 QueryResult::~QueryResult() {
-    delete column_names;
-    delete column_attributes;
-    for (auto row: *rows)
-        delete row;
-    delete rows;
+    //just in case the pointers are nullptr
+    if(!this->column_names)
+        delete column_names;
+
+    if(!this->column_attributes)
+        delete column_attributes;
+    
+    if(!this-rows) {
+        for (auto row: *rows)
+            delete row;
+        delete rows;
+    }
 }
 
 
