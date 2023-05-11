@@ -130,8 +130,28 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     cols_names.push_back(col_name);
                     cols_attrs.push_back(col_attr);
                 }
-            }
+                
+                // Add new table to tables table
+                ValueDict row;
+                row["table_name"] = statement->tableName;
+                Handle tablesHandle = SQLExec::tables->insert(&row);
 
+                // Add colums to columns table
+                DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
+                Handles columnHandles;
+                for (int i = 0; i < cols_names.size(); i++) {
+                    row["column_name"] = cols_names[i];
+                    row["data_type"] = cols_attrs[i].get_data_type();
+                    columnHandles.push_back(columns.insert(&row));
+                }
+                
+                // Create new table in db
+                DbRelation &newTable = SQLExec::tables->get_table(statement->tableName);
+                if (statement->ifNotExists)
+                    table.create_if_not_exists();
+                else
+                    table.create();
+            }
             return new QueryResult("Table created"); 
         default: 
             return new QueryResult("CREATE TABLE only supported"); 
