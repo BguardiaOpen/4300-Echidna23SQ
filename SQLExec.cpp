@@ -147,7 +147,31 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
  * @return QueryResult* the result of the drop statement
  */
 QueryResult *SQLExec::drop(const DropStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    switch(statement->type) {
+        case DropStatement::kTable:
+            {
+                //check table is not a schema table
+                Identifier tableName = statement->name;
+                if(tableName == Tables::table_name || tableName == Columns::table_name)
+                    throw SQLExecError("Error: schema tables cannot be dropped");
+
+                DbRelation &table = SQLExec::tables->get_table(tableName);
+                ValueDict location;
+                location["tableName"] = Value(tableName);
+
+                //remove columns
+                DbRelation &columns = SQLExec::tables->get_table(Columns::table_name);
+                Handles *columnHandles = columns.select(&location);
+                for(const Handle &handle : *handles) 
+                    columns.del(handle);
+
+                //drop table and remove from schema
+                table.drop();
+            }
+            return new QueryResult("Table successfully dropped!");
+        default:
+            return new QueryResult("only drop table implemented"); // FIXME
+    }
 }
 
 /**
