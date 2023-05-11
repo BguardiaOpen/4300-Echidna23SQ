@@ -372,7 +372,7 @@ public:
      * @param where              where-clause predicates
      * @returns                  a pointer to a list of handles for qualifying rows (freed by caller)
      */
-    virtual Handles *select(Handles *current_selection, const ValueDict *where) = 0;
+    //virtual Handles *select(Handles *current_selection, const ValueDict *where) = 0;
 
     /**
      * Return a sequence of all values for handle (SELECT *).

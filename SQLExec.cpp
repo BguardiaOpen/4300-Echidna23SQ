@@ -45,8 +45,8 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
 QueryResult::~QueryResult() {
     delete column_names;
     delete column_attributes;
-    for (int i = 0; i < rows.size(); i++)
-        delete rows[i];
+    for (auto row: *rows)
+        delete row;
     delete rows;
 }
 
@@ -60,7 +60,7 @@ QueryResult::~QueryResult() {
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // Initializes _tables table if not null
     if (!SQLExec::tables) {
-        SQLExec::tables = new Tables();
+        SQLExec::tables = new Tables;
     }
 
     try {
@@ -114,7 +114,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         Identifier col_name;
         ColumnAttribute col_attr;
         for (ColumnDefinition *c : *statement->columns) {
-            column_definition(col, col_name, col_attr);
+            column_definition(c, col_name, col_attr);
             cols_names.push_back(col_name);
             cols_attrs.push_back(col_attr);
         }
@@ -146,7 +146,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
  */
 QueryResult *SQLExec::show(const ShowStatement *statement) {
     switch (statement->type) {
-        case ShowStatement::ktables:
+        case ShowStatement::kTables:
             return show_tables();
         case ShowStatement::kColumns:
             return show_columns(statement);
@@ -164,14 +164,14 @@ QueryResult *SQLExec::show_tables() {
     ColumnNames *column_names = new ColumnNames;
     column_names->push_back("table_name");
 
-    ColumnAttributes *column_attributes = new ColumnAttribute;
+    ColumnAttributes *column_attributes = new ColumnAttributes;
     column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
 
     Handles *handles = SQLExec::tables->select();
 
     ValueDicts *rows = new ValueDicts;
-    for (auto const &handle : handles) {
-        ValueDict *row = SQLExec::tables->project(handle);
+    for (auto const &handle : *handles) {
+        ValueDict *row = SQLExec::tables->project(handle, column_names);
         Identifier table_name = row->at("table_name").s;
         rows->push_back(row);
     }
@@ -188,6 +188,27 @@ QueryResult *SQLExec::show_tables() {
  * @return QueryResult* the result of show
  */
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    ColumnNames *column_names = new ColumnNames;
+    column_names->push_back("table_name");
+    column_names->push_back("column_name");
+    column_names->push_back("data_type");
+    
+    ColumnAttributes *column_attributes = new ColumnAttributes;
+    column_attributes->push_back(ColumnAttribute::TEXT);
+    
+    ValueDict col;
+    col["table_name"] = Value(statement->tableName);
+
+    Handles *handles = SQLExec::tables->select(&col);
+
+    ValueDicts *rows = new ValueDicts;
+    for (auto const &handle : *handles) {
+        ValueDict *row = SQLExec::tables->project(handle, column_names);
+        rows->push_back(row);
+    }
+
+    delete handles;
+
+    return new QueryResult(column_names, column_attributes, rows, "showing columns");
 }
 
