@@ -50,7 +50,7 @@ QueryResult::~QueryResult() {
     if(!this->column_attributes)
         delete column_attributes;
     
-    if(!this-rows) {
+    if(!this->rows) {
         for (auto row: *rows)
             delete row;
         delete rows;
@@ -114,25 +114,30 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
  * @return QueryResult* the result of the create statement
  */
 QueryResult *SQLExec::create(const CreateStatement *statement) {
-    try {
-        Identifier name = statement->tableName;
-        ColumnNames cols_names;
-        ColumnAttributes cols_attrs;
-        Identifier col_name;
-        ColumnAttribute col_attr;
-        for (ColumnDefinition *c : *statement->columns) {
-            column_definition(c, col_name, col_attr);
-            cols_names.push_back(col_name);
-            cols_attrs.push_back(col_attr);
-        }
+    //check create type (future proofed for other types)
+    switch(statement->type) {
+        case CreateStatement::kTable: 
+            //prevent var scoping issues
+            {
+                //push table column names
+                Identifier name = statement->tableName;
+                ColumnNames cols_names;
+                ColumnAttributes cols_attrs;
+                Identifier col_name;
+                ColumnAttribute col_attr;
+                for (ColumnDefinition *c : *statement->columns) {
+                    column_definition(c, col_name, col_attr);
+                    cols_names.push_back(col_name);
+                    cols_attrs.push_back(col_attr);
+                }
+            }
 
-        // ????
-
-        return new QueryResult("successfully created table");
-    } catch (exception &e) {
-        cerr << e.what() << endl;
-        return new QueryResult("failed to create table");
+            return new QueryResult("Table created"); 
+        default: 
+            return new QueryResult("CREATE TABLE only supported"); 
     }
+    
+
 }
 
 /**
