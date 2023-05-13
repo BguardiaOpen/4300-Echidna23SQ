@@ -11,6 +11,7 @@
 #include "sqlhelper.h"
 #include "SQLParserResult.h"
 #include "SQLExec.h"
+#include "ParseTreeToString.h"
 
 using namespace std;
 using namespace hsql;
