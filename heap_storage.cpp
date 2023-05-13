@@ -1,10 +1,4 @@
-//HeapStorage.cpp
-//Ryan Silveira
-//4/17/23
-//Echidna-4300
-//Contains methods for SlottedPage, HeapFile, and HeapTable classes.
-
-#include "HeapStorage.h"
+#include "heap_storage.h"
 #include <cstring>
 #include "db_cxx.h"
 

@@ -1,9 +1,9 @@
-OBJS = HeapStorage.o SQLExec.o SchemaTables.o storage_engine.o cpsc4300.o
+OBJS = SQLExec.o SchemaTables.o storage_engine.o cpsc4300.o
 
 cpsc4300: $(OBJS)
 	g++ -L/usr/local/db6/lib -o $@ $< -ldb_cxx -lsqlparser
 
-HEAPSTORAGE_H = HeapStorage.h
+HEAPSTORAGE_H = heap_storage.h storage_engine.h
 SCHEMATABLES_H = SchemaTables.h $(HEAPSTORAGE_H)
 SQLEXEC_H = SQLExec.h $(SCHEMATABLES_H)
 HeapStorage.o : $(HEAPSTORAGE_H)
