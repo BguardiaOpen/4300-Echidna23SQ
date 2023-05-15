@@ -6,6 +6,7 @@
 #include "SQLExec.h"
 #include "ParseTreeToString.h"
 #include "SchemaTables.h"
+
 using namespace std;
 using namespace hsql;
 
@@ -70,6 +71,9 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // Initializes _tables table if not null
     if (!SQLExec::tables) {
         SQLExec::tables = new Tables();
+    }
+    if (!SQLExec::indices) {
+        SQLExec::indices = new Indices();
     }
 
     try {
@@ -144,7 +148,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     DbRelation &cols = SQLExec::tables->get_table(Columns::TABLE_NAME);
                     try {
                         //add columns to schema, and remove existing on error
-                        for(int index = 0; index < colNames.size(); index++) {
+                        for(int index = 0; index < (int)colNames.size(); index++) {
                             row["column_name"] = colNames[index];
                             //add type of column appropriately
                             if(colAttributes[index].get_data_type() == ColumnAttribute::INT)
@@ -179,10 +183,59 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     return new QueryResult("Error in table creation"); 
                 }
                 return new QueryResult("Table successfully created");
-                break;
+            }
+        case CreateStatement::kIndex:
+            {
+                Identifier tableName = statement->tableName;
+                Identifier indexName = statement->indexName;
+
+                DbRelation &table = SQLExec::tables->get_table(tableName);
+                const ColumnNames &cols = table.get_column_names();
+
+                // make sure columns in index are actually in table
+                for (auto const &colName : *statement->indexColumns) {
+                    if (find(cols.begin(), cols.end(), colName) == cols.end())
+                        throw SQLExecError("Index column does not exist in table");
+                }
+
+                // add index to indices table
+                ValueDict row;
+                row["table_name"] = Value(tableName);
+                row["index_name"] = Value(indexName);
+                row["index_type"] = Value(statement->indexType);
+                if (string(statement->indexType) == "BTREE")
+                    row["is_unique"] = Value("true");
+                else
+                    row["is_unique"] = Value("false");
+
+                Handles handleList;
+                try {
+                    int count = 0;
+                    
+                    for (auto const &colName : *statement->indexColumns) {
+                        row["seq_in_index"] = Value(count);
+                        row["column_name"] = Value(colName);
+                        count++;
+                        handleList.push_back(SQLExec::indices->insert(&row));
+                    }
+
+                    DbIndex &index = SQLExec::indices->get_index(tableName, indexName);
+                    index.create();
+                }
+                catch (...) {
+                    try {
+                        for (auto const &handle : handleList)
+                            SQLExec::indices->del(handle);
+                    } catch (...) {
+                        
+                    }
+                    return new QueryResult("Index could not be created");
+                }
+                
+                return new QueryResult("Index successfully created");
             }
         default: 
-            return new QueryResult("CREATE TABLE only supported"); 
+            return new QueryResult("Only CREATE TABLE and CREATE INDEX supported"); 
     }
     return nullptr;
 }

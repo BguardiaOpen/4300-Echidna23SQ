@@ -358,6 +358,10 @@ public:
      * @returns             dictionary of values from row (keyed by column_names)
      */
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names) = 0;
+    
+    virtual const ColumnNames &get_column_names() const {
+        return column_names;
+    }
 
     ColumnAttributes get_column_attributes(const ColumnNames &select_column_names) const;
     ValueDict project(Handle handle, const ValueDict *where);
