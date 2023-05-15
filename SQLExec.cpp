@@ -269,8 +269,28 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
                 table.drop();
             }
             return new QueryResult("Table successfully dropped!");
+        case DropStatement::kIndex:
+            {
+                Identifier tableName = statement->name;
+                Identifier indexName = statement->indexName;
+
+                DbIndex &index = SQLExec::indices->get_index(tableName, indexName);
+                index.drop();
+                
+                // remove from indices table
+                ValueDict location;
+                location["table_name"] = Value(tableName);
+                location["index_name"] = Value(indexName);
+                Handles *handleList = SQLExec::indices->select(&location);
+                for (Handle &handle : *handleList) {
+                    SQLExec::indices->del(handle);
+                }
+                delete handleList;
+
+                return new QueryResult("Index successfully dropped");
+            }
         default:
-            return new QueryResult("only drop table implemented"); // FIXME
+            return new QueryResult("only DROP TABLE and DROP INDEX implemented"); // FIXME
     }
 }
 
