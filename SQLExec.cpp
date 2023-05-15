@@ -11,6 +11,7 @@ using namespace hsql;
 
 // define static data
 Tables *SQLExec::tables = nullptr;
+Indices *SQLExec::indices = nullptr;
 
 // make query result be printable
 ostream &operator<<(ostream &out, const QueryResult &qres) {
@@ -122,10 +123,11 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 Identifier name = statement->tableName;
                 Identifier colName;
                 ColumnNames colNames;
+                ColumnAttribute colAttribute;
                 ColumnAttributes colAttributes;
 
-                for(auto *col : *statement->columns) {
-                    ColumnAttribute colAttribute(ColumnAttribute::INT);
+                for(ColumnDefinition *col : *statement->columns) {
+                    //ColumnAttribute colAttribute(ColumnAttribute::INT);
                     //create a column binding for column to a name and attribute and add
                     //to colNames and colAttributes
                     column_definition(col, colName, colAttribute);

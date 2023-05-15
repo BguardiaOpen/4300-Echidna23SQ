@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
     while(true){
         string sqlcmd;
-        cout << "SQL>";
+        cout << "SQL> ";
         getline(cin, sqlcmd);
         if(sqlcmd == "quit"){
             break;
@@ -61,7 +61,6 @@ int main(int argc, char **argv) {
                 cout << parse(result->getStatement(i)) << endl;
                 try {
                     QueryResult *q_result = SQLExec::execute(result->getStatement(i));
-                    // TODO: fix undefined reference to overloaded operator
                     cout << *q_result << endl;
                     delete q_result;
                 }
