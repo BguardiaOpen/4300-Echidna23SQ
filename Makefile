@@ -11,17 +11,19 @@
 #clean:
 #	rm -f *.o cpsc4300
 #
+#note: for whatever reason, Ryan's makefile wasn't linking everything properly,
+#			 so we used my makefile from the previous Sprint --Ishan
 
 EXECUTABLE_FILE = sql4300
 
 all: main
 
-main: cpsc4300.o heap_storage.o SQLExec.o
+main: heap_storage.o SQLExec.o cpsc4300.o
 	g++ -L/usr/local/db6/lib -o $(EXECUTABLE_FILE) cpsc4300.o heap_storage.o SQLExec.o -ldb_cxx -lsqlparser
 
-cpsc4300.o:    heap_storage.h storage_engine.h
+cpsc4300.o: heap_storage.h storage_engine.h
 heap_storage.o: heap_storage.h storage_engine.h
-SQLExec.o:      SQLExec.h SchemaTables.cpp
+SQLExec.o:      SQLExec.h SchemaTables.h
 
 #compilation rules for all object files
 %.o : %.cpp

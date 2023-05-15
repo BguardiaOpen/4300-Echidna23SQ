@@ -1,11 +1,17 @@
-//HeapStorage.h
-//Ryan Silveira
-//4/16/23
 
+/**
+ * @file heap_storage.h - Implementation of storage_engine with a heap file structure.
+ * SlottedPage: DbBlock
+ * HeapFile: DbFile
+ * HeapTable: DbRelation
+ *
+ * @author Kevin Lundeen
+ * @see "Seattle University, CPSC5300, Winter 2023"
+ */
 #pragma once
-
 #include "db_cxx.h"
 #include "storage_engine.h"
+#include <string> 
 using namespace std;
 
 /**
@@ -24,7 +30,10 @@ using namespace std;
  */
 class SlottedPage : public DbBlock {
 public:
-    SlottedPage(Dbt &block, BlockID block_id, bool is_new = false);
+
+    //Preconditons: block MUST be an intialized object, block_id is a valid block id
+    //              and is_new MUST be correct (this is a contractual requirement)
+    SlottedPage(Dbt &block, BlockID block_id, bool is_new);
 
     // Big 5 - we only need the destructor, copy-ctor, move-ctor, and op= are unnecessary
     // but we delete them explicitly just to make sure we don't use them accidentally
@@ -40,7 +49,8 @@ public:
 
     virtual RecordID add(const Dbt *data);
 
-    virtual Dbt *get(RecordID record_id);
+
+    virtual Dbt* get(RecordID record_id);
 
     virtual void put(RecordID record_id, const Dbt &data);
 
@@ -77,9 +87,9 @@ protected:
  */
 class HeapFile : public DbFile {
 public:
-    HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
+    HeapFile(std::string name) : DbFile(name), last(0), closed(true), db(_DB_ENV, 0) {this->dbfilename = name + ".db";};
 
-    virtual ~HeapFile() {}
+    virtual ~HeapFile() {} //nothing to delete for now, ignore
 
     HeapFile(const HeapFile &other) = delete;
 
@@ -102,7 +112,7 @@ public:
     virtual SlottedPage *get(BlockID block_id);
 
     virtual void put(DbBlock *block);
-    //Block IDs is a vector of BlockID and THIS FUNCTION IS IMPLETEMENTED BUT SHOWS AS VIRTUAL?
+
     virtual BlockIDs *block_ids();
 
     virtual u_int32_t get_last_block_id() { return last; }
@@ -146,9 +156,10 @@ public:
 
     virtual Handle insert(const ValueDict *row);
 
+    //Note: ignore these for now, they will be updated in future milestones
     virtual void update(const Handle handle, const ValueDict *new_values);
 
-    virtual void del(const Handle handle);
+    virtual void del(const Handle handle) ;
 
     virtual Handles *select();
 
@@ -169,3 +180,5 @@ protected:
 
     virtual ValueDict *unmarshal(Dbt *data);
 };
+
+bool test_heap_storage();

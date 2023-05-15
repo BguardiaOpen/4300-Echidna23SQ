@@ -129,28 +129,18 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     cols_names.push_back(col_name);
                     //cols_attrs.push_back(col_attr);
                 }
-<<<<<<< HEAD
-
-                //add table and columns to schema
-                ValueDict row;
-                row["table_name"] = name;
-                Handle handle = SQLExec::tables->insert(&row);
-            }
-=======
                 
                 // Add new table to tables table
                 ValueDict row;
-                Identifier tableName = statement->tableName;
-                row["table_name"] = tableName;
+                row["table_name"] = name;
                 Handle tablesHandle = SQLExec::tables->insert(&row);
->>>>>>> c84a5c87c0f4143d9f20e304b9aa7c5df82c258d
 
                 // Add colums to columns table
                 DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
                 Handles columnHandles;
                 for (int i = 0; i < (int)cols_names.size(); i++) {
                     row["column_name"] = cols_names[i];
-                    row["data_type"] = cols_attrs[i].get_data_type();
+                    //row["data_type"] = (dynamic_cast<int>(col_attr[i].get_data_type());
                     columnHandles.push_back(columns.insert(&row));
                 }
                 
@@ -182,12 +172,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
             {
                 //check table is not a schema table
                 Identifier tableName = statement->name;
-<<<<<<< HEAD
                 if(tableName == Tables::TABLE_NAME || tableName == Columns::TABLE_NAME)
-=======
-                if(tableName == SQLExec::tables->get_table_name() ||
-                   tableName == SQLExec::tables->get_table(Columns::TABLE_NAME).get_table_name())
->>>>>>> c84a5c87c0f4143d9f20e304b9aa7c5df82c258d
                     throw SQLExecError("Error: schema tables cannot be dropped");
 
                 DbRelation &table = SQLExec::tables->get_table(tableName);
@@ -196,11 +181,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
                 //remove columns
                 DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
                 Handles *columnHandles = columns.select(&location);
-<<<<<<< HEAD
                 for(Handle &handle : *columnHandles) 
-=======
-                for(const Handle &handle : *columnHandles) 
->>>>>>> c84a5c87c0f4143d9f20e304b9aa7c5df82c258d
                     columns.del(handle);
 
                 //drop table and remove from schema

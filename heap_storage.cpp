@@ -83,17 +83,6 @@ RecordIDs *SlottedPage::ids(){
 }
 // SLOTTEDPAGE PROTECTED METHODS START HERE
 
-// u16 SlottedPage::size() const {
-//     u16 size, loc;
-//     u16 count = 0;
-//     for (RecordID record_id = 1; record_id <= this->num_records; record_id++) {
-//         get_header(size, loc, record_id);
-//         if (loc != 0)
-//             count++;
-//     }
-//     return count;
-// }
-
 
 //Pass by reference, so size and location are changed to the values held at record_id.  The +2 is the offset.
 void SlottedPage::get_header(u16 &size, u16 &loc, RecordID id) {
@@ -164,10 +153,9 @@ SlottedPage* HeapFile::get_new(void) {
     Dbt key(&block_id, sizeof(block_id));
 
     // write out an empty block and read it back in so Berkeley DB is managing the memory
-    SlottedPage* page = new SlottedPage(data, this->last, true);
     this->db.put(nullptr, &key, &data, 0); // write it out with initialization applied
     this->db.get(nullptr, &key, &data, 0);
-    return page;
+    return new SlottedPage(data, this->last, true);
 }
 
 void HeapFile::create(void){
@@ -204,22 +192,6 @@ SlottedPage* HeapFile::get(BlockID block_id){
     return new SlottedPage(block, block_id, false);
 }
 
-// SlottedPage* HeapFile::get_new(void) {
-//     char block[DbBlock::BLOCK_SZ];
-//     std::memset(block, 0, sizeof(block));
-//     Dbt data(block, sizeof(block));
-
-//     int block_id = ++this->last;
-//     Dbt key(&block_id, sizeof(block_id));
-
-//     // write out an empty block and read it back in so Berkeley DB is managing the memory
-//     SlottedPage* page = new SlottedPage(data, this->last, true);
-//     this->db.put(nullptr, &key, &data, 0); // write it out with initialization done to it
-//     delete page;
-//     this->db.get(nullptr, &key, &data, 0);
-//     return new SlottedPage(data, this->last);
-// }
-
 void HeapFile::put(DbBlock* block) {
     BlockID block_id = block->get_block_id();
     Dbt key(&block_id, sizeof(block_id));
@@ -231,6 +203,26 @@ BlockIDs* HeapFile::block_ids() {
     for (BlockID block_id = 1; block_id <= this->last; block_id++)
         block_ids->push_back(block_id);
     return block_ids;
+}
+
+//Ryan forgot to include this, so I'm using my own code --Ishan
+void HeapFile::db_open(uint flags) {
+  //handle closed state
+  if(!this->closed) return;
+
+  //set block size and open db
+  this->db.set_re_len(DbBlock::BLOCK_SZ);
+  this->db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, flags, 0644);
+
+  //intialize db statisitcs and set last block
+  if(flags == 0) {
+    DB_BTREE_STAT stat;
+    this->db.stat(nullptr, &stat, DB_FAST_STAT);
+    this->last = stat.bt_ndata;
+  } else this-> last = 0;
+
+  //set closed to false to indicate db is open
+  this->closed = false;
 }
 
 //HeapTable STARTS HERE
@@ -370,8 +362,6 @@ Handle HeapTable::append(const ValueDict *row) {
     delete data;
     return Handle(this->file.get_last_block_id(), record_id);
 }
-
-
 
 // return the bits to go into the file
 // caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
