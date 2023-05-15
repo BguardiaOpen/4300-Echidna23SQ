@@ -10,8 +10,12 @@
 #include "SQLParser.h"
 #include "sqlhelper.h"
 #include "SQLParserResult.h"
+<<<<<<< HEAD
 #include "heap_storage.h"
+=======
+>>>>>>> c84a5c87c0f4143d9f20e304b9aa7c5df82c258d
 #include "SQLExec.h"
+#include "ParseTreeToString.h"
 
 using namespace std;
 using namespace hsql;
