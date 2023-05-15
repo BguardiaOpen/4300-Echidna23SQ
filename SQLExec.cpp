@@ -306,6 +306,8 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
             return show_tables();
         case ShowStatement::kColumns:
             return show_columns(statement);
+        case ShowStatement::kIndex:
+            return show_index(statement);
         default:
             throw SQLExecError("invalid show type");
     }
@@ -368,3 +370,37 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     return new QueryResult(column_names, column_attributes, rows, "showing columns");
 }
 
+QueryResult *SQLExec::show_index(const ShowStatement *statement) {
+    ColumnNames *colNames = new ColumnNames;
+    ColumnAttributes *colAttr = new ColumnAttributes;
+
+    colNames->push_back("table_name");
+    colAttr->push_back(ColumnAttribute::TEXT);
+    
+    colNames->push_back("index_name");
+    colAttr->push_back(ColumnAttribute::TEXT);
+    
+    colNames->push_back("column_name");
+    colAttr->push_back(ColumnAttribute::TEXT);
+    
+    colNames->push_back("seq_in_index");
+    colAttr->push_back(ColumnAttribute::INT);
+
+    colNames->push_back("index_type");
+    colAttr->push_back(ColumnAttribute::TEXT);
+
+    colNames->push_back("is_unique");
+    colAttr->push_back(ColumnAttribute::BOOLEAN);
+
+    ValueDict location;
+    location["table_name"] = Value(statement->tableName);
+    Handles *handleList = SQLExec::indices->select(&location);
+
+    ValueDicts *rows = new ValueDicts;
+    for (auto const &handle : *handleList) {
+        ValueDict *row = SQLExec::indices->project(handle, colNames);
+        rows->push_back(row);
+    }
+    delete handleList;
+    return new QueryResult(colNames, colAttr, rows, "showing indices");
+}
