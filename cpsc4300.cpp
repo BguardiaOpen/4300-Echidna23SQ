@@ -10,7 +10,7 @@
 #include "SQLParser.h"
 #include "sqlhelper.h"
 #include "SQLParserResult.h"
-#include "HeapStorage.h"
+#include "heap_storage.h"
 #include "SQLExec.h"
 
 using namespace std;

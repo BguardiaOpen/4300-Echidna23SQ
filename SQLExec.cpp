@@ -93,8 +93,7 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
  * @param column_name name of the column
  * @param column_attribute type of the column
  */
-void
-SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
+void SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     column_name = col->name;
     switch(col->type) {
         case ColumnDefinition::INT:
@@ -121,15 +120,20 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             {
                 //push table column names
                 Identifier name = statement->tableName;
-                ColumnNames cols_names;
-                ColumnAttributes cols_attrs;
                 Identifier col_name;
+                ColumnNames cols_names;
                 ColumnAttribute col_attr;
+
                 for (ColumnDefinition *c : *statement->columns) {
                     column_definition(c, col_name, col_attr);
                     cols_names.push_back(col_name);
-                    cols_attrs.push_back(col_attr);
+                    //cols_attrs.push_back(col_attr);
                 }
+
+                //add table and columns to schema
+                ValueDict row;
+                row["table_name"] = name;
+                Handle handle = SQLExec::tables->insert(&row);
             }
 
             return new QueryResult("Table created"); 
@@ -149,20 +153,20 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 QueryResult *SQLExec::drop(const DropStatement *statement) {
     switch(statement->type) {
         case DropStatement::kTable:
+            //new scope block to prevent any scoping issues/warnings with "default"
             {
                 //check table is not a schema table
                 Identifier tableName = statement->name;
-                if(tableName == Tables::table_name || tableName == Columns::table_name)
+                if(tableName == Tables::TABLE_NAME || tableName == Columns::TABLE_NAME)
                     throw SQLExecError("Error: schema tables cannot be dropped");
 
                 DbRelation &table = SQLExec::tables->get_table(tableName);
                 ValueDict location;
-                location["tableName"] = Value(tableName);
 
                 //remove columns
-                DbRelation &columns = SQLExec::tables->get_table(Columns::table_name);
+                DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
                 Handles *columnHandles = columns.select(&location);
-                for(const Handle &handle : *handles) 
+                for(Handle &handle : *columnHandles) 
                     columns.del(handle);
 
                 //drop table and remove from schema

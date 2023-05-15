@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include "HeapStorage.h"
+#include "heap_storage.h"
 
 /**
  * Initialize access to the schema tables.
