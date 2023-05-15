@@ -4,7 +4,6 @@
  * @see "Seattle University, CPSC5300, Winter 2023"
  */
 #include "SQLExec.h"
-
 using namespace std;
 using namespace hsql;
 

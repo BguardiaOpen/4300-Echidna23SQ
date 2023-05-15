@@ -23,11 +23,11 @@ main: heap_storage.o SQLExec.o cpsc4300.o
 
 cpsc4300.o: heap_storage.h storage_engine.h
 heap_storage.o: heap_storage.h storage_engine.h
-SQLExec.o:      SQLExec.h SchemaTables.h
+SQLExec.o:      SQLExec.h SchemaTables.h heap_storage.h storage_engine.h
 
 #compilation rules for all object files
 %.o : %.cpp
 	g++ -I/usr/local/db6/include -DHAVE_CXX_STDHEADERS -D_GNU_SOURCE -D_REENTRANT -fpermissive -O3 -std=c++11 -c -o $@ $<
 
-clean : 
+clean : z
 	rm -f $(EXECUTABLE_FILE) *.o
