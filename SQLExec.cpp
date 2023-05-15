@@ -4,6 +4,8 @@
  * @see "Seattle University, CPSC5300, Winter 2023"
  */
 #include "SQLExec.h"
+#include "ParseTreeToString.h"
+#include "SchemaTables.h"
 using namespace std;
 using namespace hsql;
 
@@ -115,47 +117,72 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     //check create type (future proofed for other types)
     switch(statement->type) {
         case CreateStatement::kTable: 
-            //prevent var scoping issues
-            {
-                //push table column names
+            { 
+                //add columns to table
                 Identifier name = statement->tableName;
-                Identifier col_name;
-                ColumnNames cols_names;
-                ColumnAttribute col_attr;
+                Identifier colName;
+                ColumnNames colNames;
+                ColumnAttributes colAttributes;
 
-                for (ColumnDefinition *c : *statement->columns) {
-                    column_definition(c, col_name, col_attr);
-                    cols_names.push_back(col_name);
-                    //cols_attrs.push_back(col_attr);
+                for(auto *col : *statement->columns) {
+                    ColumnAttribute colAttribute(ColumnAttribute::INT);
+                    //create a column binding for column to a name and attribute and add
+                    //to colNames and colAttributes
+                    column_definition(col, colName, colAttribute);
+                    colNames.push_back(colName);
+                    colAttributes.push_back(colAttribute);
                 }
-                
-                // Add new table to tables table
+
+                //insert an empty row into the new table to instantiate change
                 ValueDict row;
                 row["table_name"] = name;
-                Handle tablesHandle = SQLExec::tables->insert(&row);
+                Handle handle = SQLExec::tables->insert(&row);
+                try {
+                    Handles handleList;
+                    DbRelation &cols = SQLExec::tables->get_table(Columns::TABLE_NAME);
+                    try {
+                        //add columns to schema, and remove existing on error
+                        for(int index = 0; index < colNames.size(); index++) {
+                            row["column_name"] = colNames[index];
+                            //add type of column appropriately
+                            if(colAttributes[index].get_data_type() == ColumnAttribute::INT)
+                                row["data_type"] = ColumnAttribute::INT;
+                            else    
+                                row["data_type"] = ColumnAttribute::TEXT;
+                            handleList.push_back(cols.insert(&row));
+                        }
 
-                // Add colums to columns table
-                DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
-                Handles columnHandles;
-                for (int i = 0; i < (int)cols_names.size(); i++) {
-                    row["column_name"] = cols_names[i];
-                    //row["data_type"] = (dynamic_cast<int>(col_attr[i].get_data_type());
-                    columnHandles.push_back(columns.insert(&row));
+                        //create actual relation in system, accounting for prexistence
+                        DbRelation &table = SQLExec::tables->get_table(name);
+                        (statement->ifNotExists ? table.create_if_not_exists() : table.create());
+                    } catch(...) {
+                        try {
+                            //delete remaining handles
+                            for(auto &handle : handleList) 
+                                cols.del(handle);
+                        } catch (...) {
+                        //...doesn't really matter if there's an error, 
+                        //just need to try to delete the handle if it exists
+                        }
+                        return new QueryResult("Error in table creation"); 
+                    }
+                } catch(...) {
+                    //delete the handle
+                    try {
+                        SQLExec::tables->del(handle);
+                    } catch (...) {
+                        //...doesn't really matter if there's an error, 
+                        //just need to try to delete the handle if it exists
+                    }
+                    return new QueryResult("Error in table creation"); 
                 }
-                
-                // Create new table in db
-                DbRelation &newTable = SQLExec::tables->get_table(statement->tableName);
-                if (statement->ifNotExists)
-                    newTable.create_if_not_exists();
-                else
-                    newTable.create();
+                return new QueryResult("Table successfully created");
+                break;
             }
-            return new QueryResult("Table created"); 
         default: 
             return new QueryResult("CREATE TABLE only supported"); 
     }
-    
-
+    return nullptr;
 }
 
 /**

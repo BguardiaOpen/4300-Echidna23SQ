@@ -7,7 +7,7 @@
 #include <string>
 #include "SQLParser.h"
 #include "SchemaTables.h"
-#include "db_cxx.h"
+
 
 /**
  * @class SQLExecError - exception for SQLExec methods

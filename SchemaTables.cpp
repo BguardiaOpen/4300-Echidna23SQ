@@ -4,6 +4,12 @@
  * @see "Seattle University, CPSC5300, Winter 2023"
  */
 #include "SchemaTables.h"
+#include "ParseTreeToString.h"
+#include "storage_engine.h"
+#include "heap_storage.h"
+
+
+
 
 void initialize_schema_tables() {
     Tables tables;
@@ -111,7 +117,7 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
     where["table_name"] = table_name;
     Handles *handles = Tables::columns_table->select(&where);
 
-    ColumnAttribute column_attribute;
+    ColumnAttribute column_attribute(ColumnAttribute::INT);
     for (auto const &handle: *handles) {
         ValueDict *row = Tables::columns_table->project(
                 handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
