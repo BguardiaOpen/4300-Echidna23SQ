@@ -237,6 +237,9 @@ string parseShow(const ShowStatement *stmt) {
         case ShowStatement::kColumns:
             ret += string("COLUMNS FROM ") + stmt->tableName;
             break;
+        case ShowStatement::kIndex:
+            ret += string("INDEX FROM ") + stmt->tableName;
+            break;
         default:
             return "Invalid show";
     }
