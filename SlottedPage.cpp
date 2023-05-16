@@ -125,8 +125,12 @@ bool SlottedPage::has_room(u_int16_t size) {
 void SlottedPage::slide(u_int16_t start, u_int16_t end){
 	u16 shift = end - start;
 	if(shift==0) return;
-	// slide data
-	memcpy(this->address(this->end_free + 1 + shift), this->address(this->end_free + 1), start);
+    // slide data
+    void *to = this->address((u16) (this->end_free + 1 + shift));
+    void *from = this->address((u16) (this->end_free + 1));
+    int bytes = start - (this->end_free + 1U);
+    memmove(to, from, bytes);
+    
 	//correct headers
 	u16 size, location;
 	RecordIDs* idset = this->ids();
@@ -137,8 +141,8 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 			put_header(id, size, location);
 		}
 	}
+    delete idset; 
 	this->end_free += shift;
 	this->put_header();
-	delete idset; 
 }
 

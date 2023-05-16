@@ -34,7 +34,6 @@ void HeapFile::create(void){
 
 void HeapFile::open(void){
     this->db_open(0);
-    this->closed = false;
 }
 
 void HeapFile::close(void){
@@ -44,12 +43,8 @@ void HeapFile::close(void){
 
 void HeapFile::drop(void){
     this->close();
-    const char** Home = new const char*[1024];
-    _DB_ENV->get_home(Home);
-    string dbfilepath = string(*Home) + "/" + this->dbfilename;
-    delete[] Home;
-    if(remove(dbfilepath.c_str()))
-        throw std::logic_error("could not remove DB file");
+    Db db(_DB_ENV, 0);
+    db.remove(this->dbfilename.c_str(), nullptr, 0);
 }
 
 SlottedPage* HeapFile::get(BlockID block_id){
@@ -77,8 +72,11 @@ void HeapFile::db_open(uint flags) {
   if(!this->closed) return;
 
   //set block size and open db
-   this->db.set_re_len(DbBlock::BLOCK_SZ);
-  this->db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, flags, 0644);
+  this->db.set_re_len(DbBlock::BLOCK_SZ);
+  if(flags == 0)
+    this->db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, 0, 0644);  
+  else
+    this->db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, flags, 0644);
 
 
   //intialize db statisitcs and set last block

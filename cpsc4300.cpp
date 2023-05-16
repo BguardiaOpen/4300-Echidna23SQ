@@ -62,9 +62,10 @@ int main(int argc, char **argv) {
             cout << "Invalid command: " << sqlcmd << endl;
         } else {
             for(uint i = 0; i < result->size(); ++i){
-                cout << parse(result->getStatement(i)) << endl;
+                const SQLStatement* statement = result->getStatement(i);
                 try {
-                    QueryResult *q_result = SQLExec::execute(result->getStatement(i));
+                    cout << ParseTreeToString::statement(statement) << endl;
+                    QueryResult *q_result = SQLExec::execute(statement);
                     cout << *q_result << endl;
                     delete q_result;
                 }
@@ -77,7 +78,6 @@ int main(int argc, char **argv) {
     }
 
     //close db environment
-    _DB_ENV->close(0U);
     return 0;
 } 
 

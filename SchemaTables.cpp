@@ -17,7 +17,6 @@ void initialize_schema_tables() {
     Indices indices;
     indices.create_if_not_exists();
     indices.close();
-
 }
 
 // Not terribly useful since the parser weeds most of these out
@@ -340,8 +339,7 @@ void Indices::del(Handle handle) {
 }
 
 // Return a list of column names and column attributes for given table.
-void Indices::get_columns(Identifier table_name, Identifier index_name, ColumnNames &column_names, bool &is_hash,
-                          bool &is_unique) {
+void Indices::get_columns(Identifier table_name, Identifier index_name, ColumnNames &column_names, bool &is_hash, bool &is_unique) {
     // SELECT * FROM _indices WHERE table_name = <table_name> AND index_name = <index_name>
     ValueDict where;
     where["table_name"] = table_name;

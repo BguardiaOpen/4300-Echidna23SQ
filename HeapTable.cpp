@@ -1,5 +1,7 @@
 #include "HeapTable.h"
-
+#include <algorithm>
+#include <iterator>
+#include<vector> 
 using namespace std;
 using u16 = u_int16_t;
 using u32 = u_int32_t;
@@ -12,7 +14,9 @@ using u32 = u_int32_t;
  * @param column_attributes
  */
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(
-        table_name, column_names, column_attributes), file(table_name) {}
+        table_name, column_names, column_attributes), file(table_name) {
+
+        }
 
 
 
@@ -23,9 +27,9 @@ void HeapTable::create() {
 
 //This is just a more complicated version of the above
 void HeapTable::create_if_not_exists() {
-    if(!file.isOpen()) {
-       file.create();
-    } else {
+    try {
+        file.create();
+    } catch(...) {
         file.open();
     }
 }
@@ -79,18 +83,41 @@ Handles *HeapTable::select() {
 
 // SELECT operation analogue.  Load up your block IDs from the file, then your IDs from the block and where they match, push back a handle object and return it once they're all checked.
 Handles* HeapTable::select(const ValueDict* where) {
+    open();
     Handles* handles = new Handles();
     BlockIDs* block_ids = file.block_ids();
     for (auto const& block_id: *block_ids) {
         SlottedPage* block = file.get(block_id);
         RecordIDs* record_ids = block->ids();
-        for (auto const& record_id: *record_ids)
-            handles->push_back(Handle(block_id, record_id));
+        for (auto const &record_id: *record_ids) {
+            Handle handle(block_id, record_id);
+            ValueDict copy;
+            if(where != nullptr) {
+                copy.insert(where->begin(), where->end()); 
+                if (selected(handle, copy))
+                    handles->push_back(Handle(block_id, record_id));
+            }
+        }
         delete record_ids;
         delete block;
     }
     delete block_ids;
     return handles;
+}
+
+bool HeapTable::selected(Handle handle, ValueDict where) {
+    ValueDict* row = this->project(handle, where);
+    bool is_selected = *row == where;
+    delete row;
+    return is_selected;
+}
+
+// Just pulls out the column names from a ValueDict and passes that to the usual form of project().
+ValueDict *HeapTable::project(Handle handle, ValueDict where) {
+    ColumnNames t;
+    for (auto const &column: where)
+        t.push_back(column.first);
+    return this->project(handle, &t);
 }
 
 // I guess this is just a public call so that you can use it when you only have the handle.  It figures out the column names and goes and grabs them.

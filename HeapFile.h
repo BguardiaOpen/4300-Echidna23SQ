@@ -47,7 +47,7 @@ public:
 
     virtual u_int32_t get_last_block_id() { return last; }
 
-    bool isOpen() {return !this->closed;}
+    bool isOpen() {return this->closed == false;}
 
 protected:
     std::string dbfilename;

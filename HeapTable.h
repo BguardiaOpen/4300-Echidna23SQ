@@ -60,4 +60,8 @@ protected:
     virtual Dbt *marshal(const ValueDict *row);
 
     virtual ValueDict *unmarshal(Dbt *data);
+
+    bool selected(Handle handle, ValueDict where);
+
+    ValueDict *project(Handle handle, ValueDict where);
 };
