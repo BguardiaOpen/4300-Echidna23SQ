@@ -23,10 +23,10 @@ void HeapTable::create() {
 
 //This is just a more complicated version of the above
 void HeapTable::create_if_not_exists() {
-    try {
-        open();
-    } catch (DbException &e) {
-        create();
+    if(!file.isOpen()) {
+       file.create();
+    } else {
+        file.open();
     }
 }
 
@@ -47,7 +47,7 @@ void HeapTable::close() {
 
 //Handle is a pair of blockID, recordID defined in the abstract classes
 Handle HeapTable::insert(const ValueDict *row) {
-    open();
+    this->open();
     ValueDict *full_row = validate(row);
     Handle handle = append(full_row);
     delete full_row;
@@ -62,7 +62,7 @@ void HeapTable::update(const Handle handle, const ValueDict *new_values) {
 
 // DELETE operation analogue.  Take the block and record ID out, go find it and delete.
 void HeapTable::del(const Handle handle) {
-    open();
+    this->open();
     BlockID block_id = handle.first;
     RecordID record_id = handle.second;
     SlottedPage *block = this->file.get(block_id);

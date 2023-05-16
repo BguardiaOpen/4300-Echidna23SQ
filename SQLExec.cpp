@@ -6,6 +6,7 @@
 #include "SQLExec.h"
 #include "ParseTreeToString.h"
 #include "SchemaTables.h"
+#include <iostream>
 
 using namespace std;
 using namespace hsql;
@@ -69,10 +70,8 @@ QueryResult::~QueryResult() {
  */
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // Initializes _tables table if not null
-    if (!SQLExec::tables) {
+    if (SQLExec::tables == nullptr) {
         SQLExec::tables = new Tables();
-    }
-    if (!SQLExec::indices) {
         SQLExec::indices = new Indices();
     }
 
@@ -123,6 +122,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     switch(statement->type) {
         case CreateStatement::kTable: 
             { 
+                cout << "Let's create a table" << endl;
                 //add columns to table
                 Identifier name = statement->tableName;
                 Identifier colName;
@@ -138,6 +138,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     colNames.push_back(colName);
                     colAttributes.push_back(colAttribute);
                 }
+                cout << "COlumns pushed" << endl;
 
                 //insert an empty row into the new table to instantiate change
                 ValueDict row;
@@ -148,19 +149,26 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     DbRelation &cols = SQLExec::tables->get_table(Columns::TABLE_NAME);
                     try {
                         //add columns to schema, and remove existing on error
-                        for(int index = 0; index < (int)colNames.size(); index++) {
+                        cout << "Time to push the columns to the schema" << endl;
+                        for(int index = 0; index < colNames.size(); index++) {
                             row["column_name"] = colNames[index];
                             //add type of column appropriately
                             if(colAttributes[index].get_data_type() == ColumnAttribute::INT)
-                                row["data_type"] = ColumnAttribute::INT;
+                                row["data_type"] = Value("INT");
                             else    
-                                row["data_type"] = ColumnAttribute::TEXT;
+                                row["data_type"] = Value("TEXT");
                             handleList.push_back(cols.insert(&row));
                         }
+                        cout << "COlumns added to schema" << endl;
 
                         //create actual relation in system, accounting for prexistence
                         DbRelation &table = SQLExec::tables->get_table(name);
-                        (statement->ifNotExists ? table.create_if_not_exists() : table.create());
+                        if(statement->ifNotExists)
+                            table.create_if_not_exists();
+                        else
+                            table.create();
+
+                        cout << "table creation done!" << endl;
                     } catch(...) {
                         try {
                             //delete remaining handles
@@ -182,7 +190,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                     }
                     return new QueryResult("Error in table creation"); 
                 }
-                return new QueryResult("Table successfully created");
+                return new QueryResult("Table " + name + " created successfully");
             }
         case CreateStatement::kIndex:
             {
@@ -328,11 +336,21 @@ QueryResult *SQLExec::show_tables() {
     Handles *handles = SQLExec::tables->select();
 
     ValueDicts *rows = new ValueDicts;
-    for (auto const &handle : *handles) {
+    for (auto const &handle: *handles) {
         ValueDict *row = SQLExec::tables->project(handle, column_names);
         Identifier table_name = row->at("table_name").s;
-        rows->push_back(row);
+        if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME && table_name != Indices::TABLE_NAME)
+            rows->push_back(row);
+        else
+            delete row;
     }
+
+    //ValueDicts *rows = new ValueDicts;
+    //for (auto const &handle : *handles) {
+    //    ValueDict *row = SQLExec::tables->project(handle, column_names);
+    //    Identifier table_name = row->at("table_name").s;
+    //    rows->push_back(row);
+    //}
 
     delete handles;
 
@@ -346,18 +364,24 @@ QueryResult *SQLExec::show_tables() {
  * @return QueryResult* the result of show
  */
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
+    DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
+
     ColumnNames *column_names = new ColumnNames;
     column_names->push_back("table_name");
     column_names->push_back("column_name");
     column_names->push_back("data_type");
     
     ColumnAttributes *column_attributes = new ColumnAttributes;
-    column_attributes->push_back(ColumnAttribute::TEXT);
+    column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
     
     ValueDict col;
     col["table_name"] = Value(statement->tableName);
 
-    Handles *handles = SQLExec::tables->select(&col);
+    //get handles from tables
+    ValueDict where;
+    where["table_name"] = Value(statement->tableName);
+    Handles *handles = columns.select(&where);
+    u_long n = handles->size();
 
     ValueDicts *rows = new ValueDicts;
     for (auto const &handle : *handles) {

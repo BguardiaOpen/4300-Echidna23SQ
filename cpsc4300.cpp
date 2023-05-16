@@ -23,6 +23,7 @@ string parseCreate(const CreateStatement *stmt);
 string parseSelect(const SelectStatement *stmt);
 string parseShow(const ShowStatement *stmt);
 
+//db environment variables
 u_int32_t env_flags = DB_CREATE | DB_INIT_MPOOL; //If the environment does not exist, create it.  Initialize memory.
 u_int32_t db_flags = DB_CREATE; //If the database does not exist, create it.
 DbEnv *_DB_ENV;
@@ -39,13 +40,16 @@ int main(int argc, char **argv) {
     try {
         environment.set_message_stream(&cout);
 	    environment.set_error_stream(&cerr);
-	    environment.open(dbPath.c_str(), DB_CREATE, 0);
+	    environment.open(dbPath.c_str(), env_flags, 0);
     } catch(DbException &E) {
         cout << "Error creating DB environment" << endl;
         exit(EXIT_FAILURE);
     }
     _DB_ENV = &environment;
+    initialize_schema_tables();
 
+
+    //main parse loop
     while(true){
         string sqlcmd;
         cout << "SQL> ";
@@ -71,11 +75,11 @@ int main(int argc, char **argv) {
         }
         delete result;
     }
+
+    //close db environment
     _DB_ENV->close(0U);
     return 0;
-}
-
-    
+} 
 
 string expressionToString(const Expr *expr) {
     string ret;

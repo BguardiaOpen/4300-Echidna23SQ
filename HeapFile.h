@@ -1,6 +1,5 @@
 #pragma once
 
-#include "storage_engine.h"
 #include "SlottedPage.h"
 #include <cstring>
 #include "db_cxx.h"
@@ -47,6 +46,8 @@ public:
     virtual BlockIDs *block_ids();
 
     virtual u_int32_t get_last_block_id() { return last; }
+
+    bool isOpen() {return !this->closed;}
 
 protected:
     std::string dbfilename;
