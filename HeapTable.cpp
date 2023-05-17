@@ -93,9 +93,14 @@ Handles* HeapTable::select(const ValueDict* where) {
             Handle handle(block_id, record_id);
             ValueDict copy;
             if(where != nullptr) {
+                // std::cout << "Debug for select / where" << std::endl;
                 copy.insert(where->begin(), where->end()); 
                 if (selected(handle, copy))
                     handles->push_back(Handle(block_id, record_id));
+            } else
+            {
+                //std::cout << "Debug for select / no where block id {" << block_id << "} and recordid {" << record_id<< "}" << std::endl;
+                handles->push_back(Handle(block_id, record_id));
             }
         }
         delete record_ids;
